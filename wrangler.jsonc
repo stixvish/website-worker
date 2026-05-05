@@ -6,7 +6,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "website-worker",
 	"main": "src/index.js",
-	"compatibility_date": "2026-05-05",
+	"compatibility_date": "2026-03-10",
 	"r2_buckets": [
 		{
 			"binding": "IMAGES_BUCKET",
