@@ -35,6 +35,8 @@ export async function handleLetterboxd(request, env, ctx) {
 		const item = xml.match(/<item>([\s\S]*?)<\/item>/)?.[1];
 		if (!item) throw new Error('no films found');
 
+		const titleRaw = item.match(/<title>(.*?)<\/title>/)?.[1] ?? null;
+		const stars = titleRaw?.match(/[★½☆]+$/)?.[0] ?? null;
 		const title = item.match(/<letterboxd:filmTitle>(.*?)<\/letterboxd:filmTitle>/)?.[1] ?? null;
 		const year = item.match(/<letterboxd:filmYear>(.*?)<\/letterboxd:filmYear>/)?.[1] ?? null;
 		const rating = item.match(/<letterboxd:memberRating>(.*?)<\/letterboxd:memberRating>/)?.[1] ?? null;
@@ -51,6 +53,7 @@ export async function handleLetterboxd(request, env, ctx) {
 			title,
 			year,
 			rating: rating ? parseFloat(rating) : null,
+			stars,
 			watchedDate,
 			url,
 			posterUrl,
