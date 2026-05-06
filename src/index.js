@@ -34,7 +34,7 @@ export default {
 			case '/xbox':
 				return handleXbox(request, env, ctx);
 			case '/letterboxd':
-				return handleLetterboxd(request, env);
+				return handleLetterboxd(request, env, ctx);
 			case '/github':
 				return handleGithub(request, env);
 			case '/gaming':
