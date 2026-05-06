@@ -13,10 +13,13 @@ export function getCorsHeaders(request) {
 	};
 }
 
-export function jsonResponse(data, request, status = 200) {
+export function jsonResponse(data, request, status = 200, maxAge = 0) {
 	return new Response(JSON.stringify(data), {
 		status,
-		headers: getCorsHeaders(request),
+		headers: {
+			...getCorsHeaders(request),
+			'Cache-Control': maxAge > 0 ? `s-maxage=${maxAge}, stale-while-revalidate=60` : 'no-store',
+		},
 	});
 }
 
