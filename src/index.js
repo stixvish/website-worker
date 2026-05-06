@@ -26,7 +26,7 @@ export default {
 			case '/images':
 				return handleImages(request, env, ctx);
 			case '/spotify':
-				return handleSpotify(request, env);
+				return handleSpotify(request, env, ctx);
 			case '/weather':
 				return handleWeather(request, env);
 			case '/steam':
