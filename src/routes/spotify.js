@@ -1,4 +1,4 @@
-import { jsonResponse, errorResponse } from '../utils/response.js';
+import { jsonResponse, errorResponse, getAllowedOrigin } from '../utils/response.js';
 
 const CACHE_KEY = new Request('https://cache/spotify');
 const CACHE_TTL = 30;
@@ -152,7 +152,12 @@ async function fetchSpotifyData(env) {
 export async function handleSpotify(request, env, ctx) {
 	const cache = caches.default;
 	const cached = await cache.match(CACHE_KEY);
-	if (cached) return new Response(cached.body, cached);
+
+	if (cached) {
+		const headers = new Headers(cached.headers);
+		headers.set('Access-Control-Allow-Origin', getAllowedOrigin(request));
+		return new Response(cached.body, { ...cached, headers });
+	}
 
 	try {
 		const data = await fetchSpotifyData(env);
