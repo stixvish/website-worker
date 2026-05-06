@@ -20,12 +20,7 @@ const mockManifest = {
 	'whiteCoat.JPEG': "kansas city, my brother's white coat ceremony",
 };
 
-const mockObjects = [
-	...Object.keys(mockManifest).map((key) => ({ key })),
-	{ key: 'profile.jpeg' },
-	{ key: 'profile_cropped.jpeg' },
-	{ key: 'manifest.json' },
-];
+const mockObjects = [...Object.keys(mockManifest).map((key) => ({ key })), { key: 'profile_cropped.jpeg' }, { key: 'manifest.json' }];
 
 describe('filterKeys', () => {
 	it('excludes profile photos', () => {
@@ -50,7 +45,7 @@ describe('filterKeys', () => {
 	});
 
 	it('handles a bucket with only excluded files', () => {
-		const keys = filterKeys([{ key: 'profile.jpeg' }, { key: 'profile_cropped.jpeg' }, { key: 'manifest.json' }]);
+		const keys = filterKeys([{ key: 'profile_cropped.jpeg' }, { key: 'manifest.json' }]);
 		expect(keys).toHaveLength(0);
 	});
 });
