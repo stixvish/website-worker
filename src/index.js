@@ -30,9 +30,9 @@ export default {
 			case '/weather':
 				return handleWeather(request, env);
 			case '/steam':
-				return handleSteam(request, env);
+				return handleSteam(request, env, ctx);
 			case '/xbox':
-				return handleXbox(request, env);
+				return handleXbox(request, env, ctx);
 			case '/letterboxd':
 				return handleLetterboxd(request, env);
 			case '/github':
