@@ -1,6 +1,6 @@
 const ALLOWED_ORIGINS = ['https://stixvish.com', 'http://localhost:4321'];
 
-function getAllowedOrigin(request) {
+export function getAllowedOrigin(request) {
 	const origin = request.headers.get('Origin') ?? '';
 	return ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
 }
