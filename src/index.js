@@ -6,6 +6,7 @@ import { handleSteam } from './routes/steam.js';
 import { handleXbox } from './routes/xbox.js';
 import { handleLetterboxd } from './routes/letterboxd.js';
 import { handleGithub } from './routes/github.js';
+import { handleGaming } from './routes/gaming.js';
 
 export default {
 	async fetch(request, env, ctx) {
@@ -36,6 +37,8 @@ export default {
 				return handleLetterboxd(request, env);
 			case '/github':
 				return handleGithub(request, env);
+			case '/gaming':
+				return handleGaming(request, env, ctx);
 			default:
 				return notFound(request);
 		}
