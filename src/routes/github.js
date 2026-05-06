@@ -9,7 +9,7 @@ export async function handleGithub(request, env) {
 
 	const query = `
     query {
-      user(login: "${env.GITHUB_USERNAME}") {
+      user(login: "stixvish") {
         contributionsCollection {
           contributionCalendar {
             totalContributions
