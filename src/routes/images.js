@@ -45,12 +45,12 @@ export async function handleImages(request, env, ctx) {
 
 	const manifestObj = await env.IMAGES_BUCKET.get('manifest.json');
 	if (!manifestObj) {
-		return errorResponse('manifest not found', 500);
+		return errorResponse('manifest not found', request, 500);
 	}
 	const manifest = await manifestObj.json();
 
 	const selected = selectRandom(allKeys);
 	const photos = buildPhotos(selected, manifest);
 
-	return jsonResponse(photos);
+	return jsonResponse(photos, request);
 }
