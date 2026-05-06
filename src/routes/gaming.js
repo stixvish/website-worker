@@ -1,27 +1,32 @@
 import { jsonResponse, errorResponse } from '../utils/response.js';
-import { handleSteam } from './steam.js';
-import { handleXbox } from './xbox.js';
+import { fetchSteamData } from './steam.js';
+import { fetchXboxData } from './xbox.js';
+
+const CACHE_KEY = new Request('https://cache/gaming');
+const CACHE_TTL = 90;
 
 export async function handleGaming(request, env, ctx) {
-	const [steamRes, xboxRes] = await Promise.all([handleSteam(request, env, ctx), handleXbox(request, env, ctx)]);
+	const cache = caches.default;
+	const cached = await cache.match(CACHE_KEY);
+	if (cached) return new Response(cached.body, cached);
 
-	const steam = steamRes.ok ? await steamRes.json() : null;
-	const xbox = xboxRes.ok ? await xboxRes.json() : null;
+	const [steamResult, xboxResult] = await Promise.allSettled([fetchSteamData(env), fetchXboxData(env)]);
+
+	const steam = steamResult.status === 'fulfilled' ? steamResult.value : null;
+	const xbox = xboxResult.status === 'fulfilled' ? xboxResult.value : null;
 
 	if (!steam && !xbox) {
 		return errorResponse('failed to fetch gaming data', request, 500);
 	}
 
-	if (!steam) return jsonResponse({ ...xbox }, request, 200, 90);
-	if (!xbox) return jsonResponse({ ...steam }, request, 200, 90);
-
-	// both succeeded — return most recently played
-	const steamDate = steam.lastPlayed
+	const steamDate = steam?.lastPlayed
 		? new Date(typeof steam.lastPlayed === 'number' ? steam.lastPlayed * 1000 : steam.lastPlayed)
 		: new Date(0);
-	const xboxDate = xbox.lastPlayed ? new Date(xbox.lastPlayed) : new Date(0);
+	const xboxDate = xbox?.lastPlayed ? new Date(xbox.lastPlayed) : new Date(0);
 
-	const mostRecent = steamDate > xboxDate ? steam : xbox;
+	const mostRecent = !steam ? xbox : !xbox ? steam : steamDate > xboxDate ? steam : xbox;
 
-	return jsonResponse(mostRecent, request, 200, 90);
+	const res = jsonResponse(mostRecent, request, 200, CACHE_TTL);
+	ctx.waitUntil(cache.put(CACHE_KEY, res.clone()));
+	return res;
 }
