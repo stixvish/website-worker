@@ -4,25 +4,23 @@ const CACHE_KEY = new Request('https://cache/spotify');
 const CACHE_TTL = 30;
 
 const KNOWN_PLAYLISTS = {
-	'37i9dQZF1FbFLUWEjHnucn': {
-		name: 'Daylist',
-		coverUrl: 'https://daylist.spotifycdn.com/playlist-covers-mix/en/afternoon_default.jpg',
+	'37i9dQZEVXbdOgSQQ4vq0e': {
+		name: 'Release Radar',
+		coverUrl: 'https://pickasso.spotifycdn.com/image/ab67c0de0000deef/dt/v1/img/release-radar-v1/37i9dQZEVXbdOgSQQ4vq0e/en',
 	},
 	'37i9dQZEVXcTSfAWcLwg77': {
 		name: 'Discover Weekly',
 		coverUrl: 'https://pickasso.spotifycdn.com/image/ab67c0de0000deef/dt/v1/img/dw/cover/en',
 	},
-	'37i9dQZEVXbdOgSQQ4vq0e': {
-		name: 'Release Radar',
-		coverUrl: 'https://pickasso.spotifycdn.com/image/ab67c0de0000deef/dt/v1/img/release-radar-v1/37i9dQZEVXbdOgSQQ4vq0e/en',
-	},
 };
+
+const SPOTIFY_ALGORITHMIC_PREFIX = '37i9dQZF1';
 
 const CONTEXT_FALLBACKS = {
 	collection: {
 		name: 'Liked Songs',
 		url: 'https://open.spotify.com/collection/tracks',
-		coverUrl: 'https://misc.scdn.co/liked-songs/liked-songs-64.png',
+		coverUrl: 'https://stixvish.com/playlists/liked-songs.jpg',
 	},
 };
 
@@ -58,7 +56,7 @@ async function getPlaylistInfo(playlistId, accessToken) {
 	};
 }
 
-async function getContextInfo(context, accessToken) {
+async function getContextInfo(context, accessToken, track) {
 	if (!context) return null;
 
 	const uriParts = context.uri.split(':');
@@ -72,19 +70,39 @@ async function getContextInfo(context, accessToken) {
 
 	if (type === 'playlist') {
 		const known = KNOWN_PLAYLISTS[id];
-		if (known) {
-			return { ...known, url };
+		if (known) return { ...known, url };
+
+		if (id.startsWith(SPOTIFY_ALGORITHMIC_PREFIX)) {
+			return {
+				name: 'Spotify Mix',
+				url,
+				coverUrl: 'https://daylist.spotifycdn.com/playlist-covers-mix/en/afternoon_default.jpg',
+			};
 		}
+
 		const info = await getPlaylistInfo(id, accessToken);
 		return { name: info.name, url, coverUrl: info.coverUrl };
 	}
 
 	if (type === 'album') {
-		return { name: null, url, coverUrl: null };
+		return {
+			name: track.album.name,
+			url,
+			coverUrl: track.album.images[0]?.url ?? null,
+		};
 	}
 
 	if (type === 'artist') {
-		return { name: null, url, coverUrl: null };
+		const artistRes = await fetch(`https://api.spotify.com/v1/artists/${id}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+		if (!artistRes.ok) {
+			return { name: track.artists[0]?.name ?? null, url, coverUrl: null };
+		}
+		const artistData = await artistRes.json();
+		return {
+			name: artistData.name,
+			url,
+			coverUrl: artistData.images?.[0]?.url ?? null,
+		};
 	}
 
 	return null;
@@ -113,12 +131,11 @@ async function fetchSpotifyData(env) {
 		const nowPlaying = await nowPlayingRes.json();
 
 		if (nowPlaying.is_playing) {
-			const context = await getContextInfo(nowPlaying.context, accessToken);
+			const context = await getContextInfo(nowPlaying.context, accessToken, nowPlaying.item);
 			return formatTrack(nowPlaying.item, true, context);
 		}
 	}
 
-	// not playing or paused — fall back to recently played
 	const recentRes = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=1', {
 		headers: { Authorization: `Bearer ${accessToken}` },
 	});
@@ -127,7 +144,7 @@ async function fetchSpotifyData(env) {
 
 	const recentData = await recentRes.json();
 	const item = recentData.items[0];
-	const context = item.context ? await getContextInfo(item.context, accessToken) : null;
+	const context = item.context ? await getContextInfo(item.context, accessToken, item.track) : null;
 
 	return formatTrack(item.track, false, context);
 }
