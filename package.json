@@ -10,9 +10,12 @@
 	},
 	"devDependencies": {
 		"@aws-sdk/client-s3": "^3.1043.0",
-		"@cloudflare/vitest-pool-workers": "^0.12.4",
+		"@cloudflare/vitest-pool-workers": "^0.16.0",
 		"vitest": "~3.2.0",
 		"wrangler": "^4.88.0"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"image-size": "^2.0.2"
+	}
 }

@@ -16,7 +16,9 @@ export function selectRandom(keys, count = SELECTION_COUNT) {
 export function buildPhotos(keys, manifest) {
 	return keys.map((key) => ({
 		url: `${BASE_URL}/${key}`,
-		alt: manifest[key] ?? key,
+		alt: manifest[key]?.alt ?? key,
+		width: manifest[key]?.width,
+		height: manifest[key]?.height,
 	}));
 }
 
