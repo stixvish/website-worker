@@ -1,4 +1,4 @@
-const ALLOWED_ORIGINS = ['https://stixvish.com', 'http://localhost:4321', 'http://www.stixvish.com'];
+const ALLOWED_ORIGINS = ['https://stixvish.com', 'http://localhost:4321', 'https://www.stixvish.com'];
 
 export function getAllowedOrigin(request) {
 	const origin = request.headers.get('Origin') ?? '';
