@@ -36,7 +36,7 @@ export default {
 			case '/letterboxd':
 				return handleLetterboxd(request, env, ctx);
 			case '/github':
-				return handleGithub(request, env);
+				return handleGithub(request, env, ctx);
 			case '/gaming':
 				return handleGaming(request, env, ctx);
 			default:
