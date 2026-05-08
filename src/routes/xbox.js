@@ -23,6 +23,7 @@ export async function fetchXboxData(env) {
 					title: active.titleName,
 					coverUrl: active.titleSmallLogoImage ?? null,
 					lastPlayed: new Date().toISOString(),
+					playtimeTotal: null,
 					isPlaying: true,
 					platform: 'xbox',
 				};
@@ -48,6 +49,7 @@ export async function fetchXboxData(env) {
 		title: game.name,
 		coverUrl: game.displayImage,
 		lastPlayed: game.titleHistory.lastTimePlayed,
+		playtimeTotal: null,
 		isPlaying: false,
 		platform: 'xbox',
 	};

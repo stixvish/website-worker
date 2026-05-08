@@ -37,6 +37,7 @@ export async function fetchSteamData(env) {
 		iconUrl: `https://media.steampowered.com/steamcommunity/public/images/apps/${appId}/${game.img_icon_url}.jpg`,
 		lastPlayed: game.rtime_last_played,
 		playtime2Weeks: game.playtime_2weeks ?? 0,
+		playtimeTotal: Math.round((game.playtime_forever ?? 0) / 60),
 		storeUrl: `https://store.steampowered.com/app/${appId}`,
 		platform: 'steam',
 	};
