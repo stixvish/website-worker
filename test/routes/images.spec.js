@@ -2,22 +2,22 @@ import { describe, it, expect } from 'vitest';
 import { filterKeys, selectRandom, buildPhotos, EXCLUDED_KEYS, BASE_URL, SELECTION_COUNT } from '../../src/routes/images.js';
 
 const mockManifest = {
-	'austinSign.JPG': 'austin, in front of neon sign',
-	'boys.webp': 'home, hanging with the homies',
-	'celeste.jpeg': 'chicago, with the chipotle crew',
-	'flagstaff.jpeg': 'flagstaff, on the snowbowl',
-	'fortMirror.jpeg': 'jaipur, fort mirror reflection',
-	'frontBoat.jpeg': 'san diego, front of the boat',
-	'lapse.jpeg': 'home, in a parking lot',
-	'moneygun.jpeg': 'chicago, in a bar called moneygun',
-	'ncHotel.JPEG': 'chicago, in a hotel lobby',
-	'nye.jpeg': 'chicago, new years eve 2024',
-	'recess.jpeg': 'chicago, in a bar called recess',
-	'rohanyc.jpeg': 'new york city, in a rooftop bar',
-	'threeDots.jpeg': 'chicago, in a bar called three dots and a dash',
-	'wallpaper.jpeg': 'austin, gazing out into the sky',
-	'weddingBooth.jpeg': 'oak brook, at a wedding photo booth',
-	'whiteCoat.JPEG': "kansas city, my brother's white coat ceremony",
+	'austinSign.JPG': { alt: 'austin, in front of neon sign', width: 1200, height: 800 },
+	'boys.webp': { alt: 'home, hanging with the homies', width: 1200, height: 800 },
+	'celeste.jpeg': { alt: 'chicago, with the chipotle crew', width: 1200, height: 800 },
+	'flagstaff.jpeg': { alt: 'flagstaff, on the snowbowl', width: 1200, height: 800 },
+	'fortMirror.jpeg': { alt: 'jaipur, fort mirror reflection', width: 1200, height: 800 },
+	'frontBoat.jpeg': { alt: 'san diego, front of the boat', width: 1200, height: 800 },
+	'lapse.jpeg': { alt: 'home, in a parking lot', width: 1200, height: 800 },
+	'moneygun.jpeg': { alt: 'chicago, in a bar called moneygun', width: 1200, height: 800 },
+	'ncHotel.JPEG': { alt: 'chicago, in a hotel lobby', width: 1200, height: 800 },
+	'nye.jpeg': { alt: 'chicago, new years eve 2024', width: 1200, height: 800 },
+	'recess.jpeg': { alt: 'chicago, in a bar called recess', width: 1200, height: 800 },
+	'rohanyc.jpeg': { alt: 'new york city, in a rooftop bar', width: 1200, height: 800 },
+	'threeDots.jpeg': { alt: 'chicago, in a bar called three dots and a dash', width: 1200, height: 800 },
+	'wallpaper.jpeg': { alt: 'austin, gazing out into the sky', width: 1200, height: 800 },
+	'weddingBooth.jpeg': { alt: 'oak brook, at a wedding photo booth', width: 1200, height: 800 },
+	'whiteCoat.JPEG': { alt: "kansas city, my brother's white coat ceremony", width: 1200, height: 800 },
 };
 
 const mockObjects = [...Object.keys(mockManifest).map((key) => ({ key })), { key: 'profile_cropped.jpeg' }, { key: 'manifest.json' }];
@@ -91,7 +91,7 @@ describe('buildPhotos', () => {
 
 	it('uses alt from manifest', () => {
 		const photos = buildPhotos(['austinSign.JPG'], mockManifest);
-		expect(photos[0].alt).toBe(mockManifest['austinSign.JPG']);
+		expect(photos[0].alt).toBe(mockManifest['austinSign.JPG'].alt);
 	});
 
 	it('falls back to key if not in manifest', () => {

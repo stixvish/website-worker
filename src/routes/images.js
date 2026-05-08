@@ -9,8 +9,12 @@ export function filterKeys(objects) {
 }
 
 export function selectRandom(keys, count = SELECTION_COUNT) {
-	const shuffled = [...keys].sort(() => 0.5 - Math.random());
-	return shuffled.slice(0, Math.min(count, keys.length));
+	const shuffled = [...keys];
+	for (let i = shuffled.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+	}
+	return shuffled.slice(0, Math.min(count, shuffled.length));
 }
 
 export function buildPhotos(keys, manifest) {
@@ -26,30 +30,32 @@ export async function handleImages(request, env, ctx) {
 	const cache = caches.default;
 	const cacheKey = new Request('https://cache/r2-image-list');
 
-	let allKeys;
+	let allKeys, manifest;
 	const cached = await cache.match(cacheKey);
 
 	if (cached) {
-		allKeys = await cached.json();
+		const body = await cached.json();
+		allKeys = body.keys;
+		manifest = body.manifest;
 	} else {
-		const objects = await env.IMAGES_BUCKET.list();
+		const [objects, manifestObj] = await Promise.all([env.IMAGES_BUCKET.list(), env.IMAGES_BUCKET.get('manifest.json')]);
+
+		if (!manifestObj) {
+			return errorResponse('manifest not found', request, 500);
+		}
+
 		allKeys = filterKeys(objects.objects);
+		manifest = await manifestObj.json();
 
 		ctx.waitUntil(
 			cache.put(
 				cacheKey,
-				new Response(JSON.stringify(allKeys), {
+				new Response(JSON.stringify({ keys: allKeys, manifest }), {
 					headers: { 'Cache-Control': 'max-age=3600' },
 				}),
 			),
 		);
 	}
-
-	const manifestObj = await env.IMAGES_BUCKET.get('manifest.json');
-	if (!manifestObj) {
-		return errorResponse('manifest not found', request, 500);
-	}
-	const manifest = await manifestObj.json();
 
 	const selected = selectRandom(allKeys);
 	const photos = buildPhotos(selected, manifest);

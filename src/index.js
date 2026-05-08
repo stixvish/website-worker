@@ -28,7 +28,7 @@ export default {
 			case '/spotify':
 				return handleSpotify(request, env, ctx);
 			case '/weather':
-				return handleWeather(request, env);
+				return handleWeather(request, env, ctx);
 			case '/steam':
 				return handleSteam(request, env, ctx);
 			case '/xbox':

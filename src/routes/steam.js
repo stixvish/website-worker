@@ -1,4 +1,4 @@
-import { jsonResponse, errorResponse } from '../utils/response.js';
+import { jsonResponse, errorResponse, getAllowedOrigin } from '../utils/response.js';
 
 const CACHE_KEY = new Request('https://cache/steam');
 const CACHE_TTL = 90;
@@ -45,7 +45,11 @@ export async function fetchSteamData(env) {
 export async function handleSteam(request, env, ctx) {
 	const cache = caches.default;
 	const cached = await cache.match(CACHE_KEY);
-	if (cached) return new Response(cached.body, cached);
+	if (cached) {
+		const headers = new Headers(cached.headers);
+		headers.set('Access-Control-Allow-Origin', getAllowedOrigin(request));
+		return new Response(cached.body, { ...cached, headers });
+	}
 
 	try {
 		const data = await fetchSteamData(env);

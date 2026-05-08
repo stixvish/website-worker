@@ -1,4 +1,7 @@
-import { jsonResponse, errorResponse } from '../utils/response.js';
+import { jsonResponse, errorResponse, getAllowedOrigin } from '../utils/response.js';
+
+const CACHE_KEY = new Request('https://cache/weather');
+const CACHE_TTL = 300;
 
 const CHICAGO_LAT = 41.8781;
 const CHICAGO_LON = -87.6298;
@@ -30,7 +33,16 @@ const WMO_CODES = {
 	99: 'Thunderstorm with heavy hail',
 };
 
-export async function handleWeather(request, env) {
+export async function handleWeather(request, env, ctx) {
+	const cache = caches.default;
+	const cached = await cache.match(CACHE_KEY);
+
+	if (cached) {
+		const headers = new Headers(cached.headers);
+		headers.set('Access-Control-Allow-Origin', getAllowedOrigin(request));
+		return new Response(cached.body, { ...cached, headers });
+	}
+
 	const res = await fetch(
 		`https://api.open-meteo.com/v1/forecast?latitude=${CHICAGO_LAT}&longitude=${CHICAGO_LON}&current=temperature_2m,apparent_temperature,weathercode&temperature_unit=fahrenheit&timezone=America%2FChicago`,
 	);
@@ -42,7 +54,7 @@ export async function handleWeather(request, env) {
 	const data = await res.json();
 	const current = data.current;
 
-	return jsonResponse(
+	const response = jsonResponse(
 		{
 			temperature: Math.round(current.temperature_2m),
 			feelsLike: Math.round(current.apparent_temperature),
@@ -52,6 +64,9 @@ export async function handleWeather(request, env) {
 		},
 		request,
 		200,
-		300,
+		CACHE_TTL,
 	);
+
+	ctx.waitUntil(cache.put(CACHE_KEY, response.clone()));
+	return response;
 }

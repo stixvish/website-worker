@@ -1,6 +1,18 @@
-import { jsonResponse, errorResponse } from '../utils/response.js';
+import { jsonResponse, errorResponse, getAllowedOrigin } from '../utils/response.js';
 
-export async function handleGithub(request, env) {
+const CACHE_KEY = new Request('https://cache/github');
+const CACHE_TTL = 3600;
+
+export async function handleGithub(request, env, ctx) {
+	const cache = caches.default;
+	const cached = await cache.match(CACHE_KEY);
+
+	if (cached) {
+		const headers = new Headers(cached.headers);
+		headers.set('Access-Control-Allow-Origin', getAllowedOrigin(request));
+		return new Response(cached.body, { ...cached, headers });
+	}
+
 	const headers = {
 		Authorization: `Bearer ${env.GITHUB_TOKEN}`,
 		'Content-Type': 'application/json',
@@ -10,6 +22,7 @@ export async function handleGithub(request, env) {
 	const query = `
     query {
       user(login: "stixvish") {
+        avatarUrl
         contributionsCollection {
           contributionCalendar {
             totalContributions
@@ -35,6 +48,14 @@ export async function handleGithub(request, env) {
             primaryLanguage {
               name
               color
+            }
+            defaultBranchRef {
+              name
+              target {
+                ... on Commit {
+                  message
+                }
+              }
             }
           }
         }
@@ -62,22 +83,26 @@ export async function handleGithub(request, env) {
 	const calendar = user.contributionsCollection.contributionCalendar;
 	const allDays = calendar.weeks.flatMap((w) => w.contributionDays);
 
-	// calculate current streak
 	const today = new Date().toISOString().split('T')[0];
 	let streak = 0;
 	for (let i = allDays.length - 1; i >= 0; i--) {
 		const day = allDays[i];
 		if (day.date > today) continue;
-		if (day.contributionCount === 0) break;
+		if (day.contributionCount === 0) {
+			if (day.date === today) continue;
+			break;
+		}
 		streak++;
 	}
 
 	const repo = user.repositories.nodes[0] ?? null;
+	const branchRef = repo?.defaultBranchRef ?? null;
 
-	return jsonResponse(
+	const response = jsonResponse(
 		{
 			totalContributions: calendar.totalContributions,
 			streak,
+			avatarUrl: user.avatarUrl ?? null,
 			lastRepo: repo
 				? {
 						name: repo.name,
@@ -85,11 +110,20 @@ export async function handleGithub(request, env) {
 						url: repo.url,
 						pushedAt: repo.pushedAt,
 						language: repo.primaryLanguage ?? null,
+						lastCommit: branchRef
+							? {
+									message: branchRef.target?.message ?? null,
+									branch: branchRef.name,
+								}
+							: null,
 					}
 				: null,
 		},
 		request,
 		200,
-		3600,
+		CACHE_TTL,
 	);
+
+	ctx.waitUntil(cache.put(CACHE_KEY, response.clone()));
+	return response;
 }

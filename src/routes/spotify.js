@@ -112,9 +112,9 @@ function formatTrack(track, isPlaying, context) {
 	return {
 		isPlaying,
 		title: track.name,
-		artist: track.artists.map((a) => a.name).join(', '),
+		artists: track.artists.map((a) => ({ name: a.name, url: a.external_urls.spotify })),
 		album: track.album.name,
-		albumArt: track.album.images[0].url,
+		albumArt: track.album.images[0]?.url ?? null,
 		trackUrl: track.external_urls.spotify,
 		context,
 	};
