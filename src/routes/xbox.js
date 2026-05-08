@@ -24,50 +24,46 @@ export async function fetchXboxData(env) {
 		Accept: 'application/json',
 	};
 
-	const presenceRes = await fetch('https://api.xbl.io/v2/presence', { headers });
+	const [presenceRes, titlesRes] = await Promise.all([
+		fetch('https://api.xbl.io/v2/presence', { headers }),
+		fetch('https://api.xbl.io/v2/titles', { headers }),
+	]);
+
+	if (!titlesRes.ok) throw new Error('failed to fetch xbox data');
+
+	const titlesData = await titlesRes.json();
+	const validTitles = (titlesData.content?.titles ?? [])
+		.filter((t) => t.titleHistory?.lastTimePlayed && t.displayImage && t.type === 'Game' && !EXCLUDED_TITLES.includes(t.name))
+		.sort((a, b) => new Date(b.titleHistory.lastTimePlayed) - new Date(a.titleHistory.lastTimePlayed));
+
+	if (!validTitles.length) throw new Error('no valid games found');
+
+	let isPlaying = false;
+	let game = validTitles[0];
 
 	if (presenceRes.ok) {
 		const presenceData = await presenceRes.json();
-		const titles = presenceData.people?.[0]?.presenceTitleRecords;
+		const content = presenceData.content;
 
-		if (titles?.length) {
-			const active = titles.find((t) => t.isTitleActive);
+		if (content?.state === 'Online') {
+			const presenceTitles = content.devices?.flatMap((d) => d.titles) ?? [];
+			const active = presenceTitles.find((t) => t.placement === 'Full' && t.state === 'Active');
+
 			if (active) {
-				const playtimeTotal = await getPlaytimeHours(active.titleId, headers);
-				return {
-					title: active.titleName,
-					coverUrl: active.titleSmallLogoImage ?? null,
-					lastPlayed: new Date().toISOString(),
-					playtimeTotal,
-					isPlaying: true,
-					platform: 'xbox',
-				};
+				isPlaying = true;
+				game = validTitles.find((t) => String(t.titleId) === String(active.id)) ?? game;
 			}
 		}
 	}
-
-	const titlesRes = await fetch('https://api.xbl.io/v2/titles', { headers });
-	if (!titlesRes.ok) throw new Error('failed to fetch xbox data');
-
-	const data = await titlesRes.json();
-	const allTitles = data.content?.titles;
-
-	if (!allTitles?.length) throw new Error('no games found');
-
-	const game = allTitles
-		.filter((t) => t.titleHistory?.lastTimePlayed && t.displayImage && t.type === 'Game' && !EXCLUDED_TITLES.includes(t.name))
-		.sort((a, b) => new Date(b.titleHistory.lastTimePlayed) - new Date(a.titleHistory.lastTimePlayed))[0];
-
-	if (!game) throw new Error('no valid games found');
 
 	const playtimeTotal = await getPlaytimeHours(game.titleId, headers);
 
 	return {
 		title: game.name,
 		coverUrl: game.displayImage,
-		lastPlayed: game.titleHistory.lastTimePlayed,
+		lastPlayed: isPlaying ? new Date().toISOString() : game.titleHistory.lastTimePlayed,
 		playtimeTotal,
-		isPlaying: false,
+		isPlaying,
 		platform: 'xbox',
 	};
 }
