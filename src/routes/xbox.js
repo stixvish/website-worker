@@ -4,6 +4,20 @@ const CACHE_KEY = new Request('https://cache/xbox');
 const CACHE_TTL = 90;
 const EXCLUDED_TITLES = ['Minecraft Launcher'];
 
+async function getPlaytimeHours(titleId, headers) {
+	try {
+		const res = await fetch(`https://api.xbl.io/v2/achievements/stats/${titleId}`, { headers });
+		if (!res.ok) return null;
+		const data = await res.json();
+		const stats = data.content?.statlistscollection?.[0]?.stats ?? [];
+		const minutesStat = stats.find((s) => s.name === 'MinutesPlayed');
+		if (!minutesStat) return null;
+		return Math.round(Number(minutesStat.value) / 60);
+	} catch {
+		return null;
+	}
+}
+
 export async function fetchXboxData(env) {
 	const headers = {
 		'x-authorization': env.XBL_API_KEY,
@@ -19,11 +33,12 @@ export async function fetchXboxData(env) {
 		if (titles?.length) {
 			const active = titles.find((t) => t.isTitleActive);
 			if (active) {
+				const playtimeTotal = await getPlaytimeHours(active.titleId, headers);
 				return {
 					title: active.titleName,
 					coverUrl: active.titleSmallLogoImage ?? null,
 					lastPlayed: new Date().toISOString(),
-					playtimeTotal: null,
+					playtimeTotal,
 					isPlaying: true,
 					platform: 'xbox',
 				};
@@ -45,11 +60,13 @@ export async function fetchXboxData(env) {
 
 	if (!game) throw new Error('no valid games found');
 
+	const playtimeTotal = await getPlaytimeHours(game.titleId, headers);
+
 	return {
 		title: game.name,
 		coverUrl: game.displayImage,
 		lastPlayed: game.titleHistory.lastTimePlayed,
-		playtimeTotal: null,
+		playtimeTotal,
 		isPlaying: false,
 		platform: 'xbox',
 	};
